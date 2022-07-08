@@ -18,13 +18,7 @@
 1. Click the [Deploy to Heroku](https://heroku.com/deploy?template=https://github.com/saucesteals/previewer-rs) button above
 2. Enter your discord bot's token as prompted
 3. Click `Deploy app`, then wait until it's finished
-4. Click `Manage App`
-5. Click `Configure Dynos` in the `Dyno formation` section
-6. Click the ✏️ icon on both dynos
-7. Disable the web dyno
-8. Enable the worker dyno
-9. Click confirm on both dynos
-10. Enjoy :)
+4. Enjoy :)
 
 ### **Manual**
 
