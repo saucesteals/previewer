@@ -22,18 +22,18 @@
 
 ### **Manual**
 
-Previewer requires [Rust](https://www.rust-lang.org/tools/install) to run.
+Prerequisites:
 
-Install the dependencies.
+- [Rust](https://www.rust-lang.org/tools/install)
 
-Create and configure an `.env` file from the following template:
+1. Create and configure an `.env` file from the following template:
 
 ```sh
 # Your discord bot's token
 DISCORD_TOKEN=
 ```
 
-Start it!
+2. Start it!
 
 ```sh
 cargo run
