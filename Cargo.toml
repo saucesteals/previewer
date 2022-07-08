@@ -1,0 +1,22 @@
+[package]
+name = "previewer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+dotenv = "0.15.0"
+regex = "1"
+lazy_static = "1.4.0"
+
+[dependencies.serenity]
+default-features = false
+features = [
+    "model",
+    "builder",
+    "client",
+    "http",
+    "gateway",
+    "rustls_backend",
+]
+version = "0.11"
