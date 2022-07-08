@@ -11,15 +11,6 @@
 
 - [Invite our publicly hosted bot](https://discord.com/oauth2/authorize?client_id=866304561017913354&scope=bot&permissions=388176)
 
-### **Heroku**
-
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/saucesteals/previewer-rs)
-
-1. Click the [Deploy to Heroku](https://heroku.com/deploy?template=https://github.com/saucesteals/previewer-rs) button above
-2. Enter your discord bot's token as prompted
-3. Click `Deploy app`, then wait until it's finished
-4. Enjoy :)
-
 ### **Manual**
 
 Prerequisites:
