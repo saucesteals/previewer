@@ -10,7 +10,7 @@ lazy_static! {
 }
 
 impl Provider for TiktokProvider {
-    fn new_message<'a>(&self, url: &str) -> CreateMessage {
+    fn new_message(&self, url: &str) -> CreateMessage {
         let mut message = CreateMessage::default();
         message.content(format!("https://tiktok.sauce.sh/?url=https://{url}"));
         message
