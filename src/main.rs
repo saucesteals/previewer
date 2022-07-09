@@ -192,6 +192,7 @@ async fn main() {
     .max_connections(5)
     .connect(&env::var("DATABASE_URL").expect("Database URL")).await.expect("Connect to database");
 
+    sqlx::migrate!().run(&pool).await.expect("Migrate database");
 
     let mut client = Client::builder(token, intents)
         .event_handler(Handler::new(db::Database::new(pool)))
