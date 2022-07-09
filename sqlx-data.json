@@ -1,0 +1,100 @@
+{
+  "db": "PostgreSQL",
+  "3a0ed3d5114665f722684b14aa961b6f38f76ba8b7979c1592663709bb10565b": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "guild_id",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "disabled_providers",
+          "ordinal": 2,
+          "type_info": "TextArray"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT * FROM guilds WHERE guild_id = $1"
+  },
+  "45884235af0abedd10791d74d07196fd0e3538399a3abae024a9c2e45b2c9b1a": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "guild_id",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "disabled_providers",
+          "ordinal": 2,
+          "type_info": "TextArray"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Varchar"
+        ]
+      }
+    },
+    "query": "INSERT INTO guilds (guild_id, disabled_providers) VALUES ($1, '{}') RETURNING *"
+  },
+  "921536a2f5e231cc84c23b059a17a2c7d04720025e47f55ae897eebe0b988188": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "guild_id",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "disabled_providers",
+          "ordinal": 2,
+          "type_info": "TextArray"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "TextArray"
+        ]
+      }
+    },
+    "query": "UPDATE guilds SET disabled_providers = $2 WHERE guild_id = $1 RETURNING *"
+  }
+}

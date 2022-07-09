@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }
-sqlx = { version = "0.6", features = [ "runtime-tokio-rustls", "postgres" ] }
+sqlx = { version = "0.6", features = [ "runtime-tokio-rustls", "postgres", "offline" ] }
 dotenv = "0.15.0"
 regex = "1"
 lazy_static = "1.4.0"
