@@ -63,27 +63,11 @@ impl EventHandler for Handler<'_> {
             return;
         }   
 
+        let guild = tokio::sync::OnceCell::new();
+
         let guild_id = msg.guild_id.unwrap();
 
-        let guild = match self.db.get_guild_by_id(guild_id.0).await {
-            Ok(guild) => guild,
-            Err(err) => {
-                if let sqlx::Error::RowNotFound = err  {
-                    match self.db.create_guild(guild_id.0).await {
-                        Ok(guild) => {
-                            guild
-                        },
-                        Err(err) => {
-                            println!("Error creating guild: {}", err);
-                            return
-                        }
-                    }
-                } else {
-                    println!("Failed to fetch guild {}", err);
-                    return
-                }
-            }
-        };
+        let get_guild = || guild.get_or_init(|| self.db.create_or_get_guild(guild_id.0));
 
         let is_valid_provider = |provider: &str| self.providers.iter().any(|p| p.name() == provider);
         let invalid_provider = || {
@@ -107,6 +91,14 @@ impl EventHandler for Handler<'_> {
                 invalid_provider().await.ok();
                 return
             }
+
+            let guild = match get_guild().await {
+                Ok(guild) => guild,
+                Err(err) => {
+                    println!("Error getting guild: {}", err);
+                    return
+                }
+            };
 
             if !guild.disabled_providers.contains(&provider.to_string()) {
                 msg.channel_id.say(&ctx, "Provider is already enabled.").await.ok();
@@ -140,6 +132,14 @@ impl EventHandler for Handler<'_> {
                 return
             }
 
+            let guild = match get_guild().await {
+                Ok(guild) => guild,
+                Err(err) => {
+                    println!("Error getting guild: {}", err);
+                    return
+                }
+            };
+
             if guild.disabled_providers.contains(&provider.to_string()) {
                 msg.channel_id.say(&ctx, "Provider is already disabled.").await.ok();
                 return
@@ -159,17 +159,33 @@ impl EventHandler for Handler<'_> {
             };
             return
         } else if msg.content.starts_with("!providers") {
+            let guild = match get_guild().await {
+                Ok(guild) => guild,
+                Err(err) => {
+                    println!("Error getting guild: {}", err);
+                    return
+                }
+            };
+
             msg.channel_id.say(&ctx, format!("Disabled providers: {}", guild.disabled_providers.join(", "))).await.ok();
             return
         }
 
-
-        for provider in &self.providers {
-            if guild.disabled_providers.contains(&provider.name()) {
-                continue;
-            }
-            
+    
+        for provider in &self.providers {    
             if let Some(url) = provider.match_url(&msg.content) {
+                let guild = match get_guild().await {
+                    Ok(guild) => guild,
+                    Err(err) => {
+                        println!("Error getting guild: {}", err);
+                        return
+                    }
+                };
+    
+                if guild.disabled_providers.contains(&provider.name()) {
+                    continue;
+                }
+
                 let create_message = provider.new_message(url);
                 let map = json::hashmap_to_json_map(create_message.0);
                 ctx.http

@@ -15,6 +15,19 @@ impl Database {
         Self { pool }
     }
 
+    pub async fn create_or_get_guild(&self, guild_id: u64) -> Result<Guild, Error> {
+        match self.get_guild_by_id(guild_id).await {
+            Ok(guild) => Ok(guild),
+            Err(err) => {
+                if let sqlx::Error::RowNotFound = err  {
+                    return self.create_guild(guild_id).await
+                } 
+
+                Err(err)
+            }
+        }
+    }
+
     pub async fn create_guild(&self, guild_id: u64) -> Result<Guild, Error> {
         sqlx::query_as!(Guild,
             "INSERT INTO guilds (guild_id, disabled_providers) VALUES ($1, '{}') RETURNING *", 
