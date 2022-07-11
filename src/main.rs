@@ -44,9 +44,9 @@ impl EventHandler for Handler {
         if let Interaction::ApplicationCommand(command) = interaction {
             let content = match command.data.name.as_str() {
                 "ping" => "Hey, I'm alive!".into(),
-                "list" => commands::general::providers(&ctx, &command).await,
-                "enable" => commands::general::enable(&ctx, &command).await,
-                "disable" => commands::general::disable(&ctx, &command).await,
+                "list" => commands::providers(&ctx, &command).await,
+                "enable" => commands::enable(&ctx, &command).await,
+                "disable" => commands::disable(&ctx, &command).await,
                 _ => "not implemented :(".into(),
             };
 
