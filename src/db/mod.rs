@@ -1,10 +1,15 @@
 mod model;
 pub use model::Guild;
 
+use serenity::prelude::TypeMapKey;
 use sqlx::{Error, Pool, Postgres};
 
 pub struct Database {
     pool: Pool<Postgres>,
+}
+
+impl TypeMapKey for Database {
+    type Value = Self;
 }
 
 impl Database {

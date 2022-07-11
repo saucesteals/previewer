@@ -1,3 +1,4 @@
+mod commands;
 mod db;
 mod providers;
 
@@ -8,11 +9,16 @@ use serenity::{
     client::{Context, EventHandler},
     json::{self, Value},
     model::{
+        application::{
+            command::{Command, CommandOptionType},
+            interaction::{Interaction, InteractionResponseType},
+        },
         channel::Message,
         gateway::{Activity, Ready},
         guild::Guild,
+        Permissions,
     },
-    prelude::GatewayIntents,
+    prelude::{GatewayIntents, TypeMapKey},
     Client,
 };
 use sqlx::postgres::PgPoolOptions;
@@ -21,24 +27,42 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-struct Handler<'a> {
-    providers: Vec<&'a dyn Provider>,
+struct Handler {
     guild_count: AtomicUsize,
-    db: db::Database,
 }
 
-impl Handler<'_> {
-    fn new(database: db::Database) -> Self {
+impl Default for Handler {
+    fn default() -> Self {
         Self {
-            providers: vec![&TiktokProvider {}],
             guild_count: AtomicUsize::default(),
-            db: database,
         }
     }
 }
-
 #[async_trait]
-impl EventHandler for Handler<'_> {
+impl EventHandler for Handler {
+    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
+        if let Interaction::ApplicationCommand(command) = interaction {
+            let content = match command.data.name.as_str() {
+                "ping" => "Hey, I'm alive!".to_string(),
+                "list" => commands::general::providers(&ctx, &command).await,
+                "enable" => commands::general::enable(&ctx, &command).await,
+                "disable" => commands::general::disable(&ctx, &command).await,
+                _ => "not implemented :(".to_string(),
+            };
+
+            if let Err(why) = command
+                .create_interaction_response(&ctx.http, |response| {
+                    response
+                        .kind(InteractionResponseType::ChannelMessageWithSource)
+                        .interaction_response_data(|message| message.content(content))
+                })
+                .await
+            {
+                println!("Failed to respond to slash command: {why}");
+            }
+        }
+    }
+
     async fn guild_create(&self, ctx: Context, _guild: Guild) {
         let guild_count = self.guild_count.fetch_add(1, Ordering::SeqCst);
 
@@ -55,6 +79,61 @@ impl EventHandler for Handler<'_> {
         self.guild_count.store(guild_count, Ordering::SeqCst);
         ctx.set_activity(Activity::watching(format!("{} guilds", guild_count)))
             .await;
+
+        let data = ctx.data.read().await;
+        let state = data.get::<State>().unwrap();
+
+        let commands = Command::set_global_application_commands(&ctx, |commands| {
+            commands
+                .create_application_command(|command| {
+                    command.name("ping").description("A ping command")
+                })
+                .create_application_command(|command| {
+                    command
+                        .name("enable")
+                        .description("Enable a provider")
+                        .default_member_permissions(Permissions::ADMINISTRATOR)
+                        .create_option(|option| {
+                            option
+                                .name("provider")
+                                .description("provider")
+                                .required(true)
+                                .kind(CommandOptionType::String);
+                            for provider in &state.providers {
+                                option.add_string_choice(provider.name(), provider.name());
+                            }
+                            option
+                        })
+                })
+                .create_application_command(|command| {
+                    command
+                        .name("disable")
+                        .description("Disable a provider")
+                        .default_member_permissions(Permissions::ADMINISTRATOR)
+                        .create_option(|option| {
+                            option
+                                .name("provider")
+                                .description("provider")
+                                .required(true)
+                                .kind(CommandOptionType::String);
+                            for provider in &state.providers {
+                                option.add_string_choice(provider.name(), provider.name());
+                            }
+                            option
+                        })
+                })
+                .create_application_command(|command| {
+                    command
+                        .name("list")
+                        .description("List providers")
+                        .default_member_permissions(Permissions::ADMINISTRATOR)
+                })
+        })
+        .await;
+
+        if let Err(err) = commands {
+            println!("Error adding commands {err}")
+        }
     }
 
     async fn message(&self, ctx: Context, msg: Message) {
@@ -62,156 +141,13 @@ impl EventHandler for Handler<'_> {
             return;
         }
 
-        let guild = tokio::sync::OnceCell::new();
+        let data = ctx.data.read().await;
 
-        let guild_id = msg.guild_id.unwrap();
+        let state = data.get::<State>().unwrap();
 
-        let get_guild = || guild.get_or_init(|| self.db.create_or_get_guild(guild_id.0));
-
-        let is_valid_provider =
-            |provider: &str| self.providers.iter().any(|p| p.name() == provider);
-        let invalid_provider = || {
-            msg.channel_id.say(
-                &ctx,
-                format!(
-                    "Invalid provider. Please use one of: {}",
-                    self.providers
-                        .iter()
-                        .map(|p| p.name())
-                        .collect::<Vec<String>>()
-                        .join(", ")
-                ),
-            )
-        };
-
-        if msg.content.starts_with("!enable") {
-            let provider = match msg.content.split_whitespace().nth(1) {
-                Some(provider) => provider,
-                None => {
-                    msg.channel_id
-                        .say(&ctx, "Please specify a provider to enable.")
-                        .await
-                        .ok();
-                    return;
-                }
-            };
-
-            if !is_valid_provider(provider) {
-                invalid_provider().await.ok();
-                return;
-            }
-
-            let guild = match get_guild().await {
-                Ok(guild) => guild,
-                Err(err) => {
-                    println!("Error getting guild: {}", err);
-                    return;
-                }
-            };
-
-            if !guild.disabled_providers.contains(&provider.to_string()) {
-                msg.channel_id
-                    .say(&ctx, "Provider is already enabled.")
-                    .await
-                    .ok();
-                return;
-            }
-
-            let mut disabled_providers = guild.disabled_providers.clone();
-            disabled_providers.retain(|p| p != provider);
-
-            match self
-                .db
-                .update_guild_by_id(guild_id.0, &disabled_providers)
-                .await
-            {
-                Ok(_) => {
-                    msg.channel_id.say(&ctx, "Provider enabled.").await.ok();
-                }
-                Err(err) => {
-                    println!("Error updating guild: {}", err);
-                    return;
-                }
-            };
-            return;
-        } else if msg.content.starts_with("!disable") {
-            let provider = match msg.content.split_whitespace().nth(1) {
-                Some(provider) => provider,
-                None => {
-                    msg.channel_id
-                        .say(&ctx, "Please specify a provider to disable.")
-                        .await
-                        .ok();
-                    return;
-                }
-            };
-
-            if !is_valid_provider(provider) {
-                invalid_provider().await.ok();
-                return;
-            }
-
-            let guild = match get_guild().await {
-                Ok(guild) => guild,
-                Err(err) => {
-                    println!("Error getting guild: {}", err);
-                    return;
-                }
-            };
-
-            if guild.disabled_providers.contains(&provider.to_string()) {
-                msg.channel_id
-                    .say(&ctx, "Provider is already disabled.")
-                    .await
-                    .ok();
-                return;
-            }
-
-            let mut disabled_providers = guild.disabled_providers.clone();
-            disabled_providers.push(provider.to_string());
-
-            match self
-                .db
-                .update_guild_by_id(guild_id.0, &disabled_providers)
-                .await
-            {
-                Ok(_) => {
-                    msg.channel_id.say(&ctx, "Provider disabled.").await.ok();
-                }
-                Err(err) => {
-                    println!("Error updating guild: {}", err);
-                    msg.channel_id
-                        .say(&ctx, "Error disabling provider.")
-                        .await
-                        .ok();
-                }
-            };
-            return;
-        } else if msg.content.starts_with("!providers") {
-            let guild = match get_guild().await {
-                Ok(guild) => guild,
-                Err(err) => {
-                    println!("Error getting guild: {}", err);
-                    return;
-                }
-            };
-
-            msg.channel_id
-                .say(
-                    &ctx,
-                    format!(
-                        "Disabled providers: {}",
-                        guild.disabled_providers.join(", ")
-                    ),
-                )
-                .await
-                .ok();
-            return;
-        }
-
-        for provider in &self.providers {
+        for provider in &state.providers {
             if let Some(url) = provider.match_url(&msg.content) {
-                let guild = match get_guild().await {
+                let guild = match state.db.create_or_get_guild(msg.guild_id.unwrap().0).await {
                     Ok(guild) => guild,
                     Err(err) => {
                         println!("Error getting guild: {}", err);
@@ -229,9 +165,20 @@ impl EventHandler for Handler<'_> {
                     .send_message(msg.channel_id.0, &Value::from(map))
                     .await
                     .ok();
+
+                return;
             }
         }
     }
+}
+
+struct State<'a> {
+    db: db::Database,
+    providers: Vec<&'a dyn Provider>,
+}
+
+impl TypeMapKey for State<'static> {
+    type Value = Self;
 }
 
 #[tokio::main]
@@ -249,10 +196,22 @@ async fn main() {
 
     sqlx::migrate!().run(&pool).await.expect("Migrate database");
 
+    let db = db::Database::new(pool);
+
+    let state = State {
+        db: db,
+        providers: vec![&TiktokProvider {}],
+    };
+
     let mut client = Client::builder(token, intents)
-        .event_handler(Handler::new(db::Database::new(pool)))
+        .event_handler(Handler::default())
         .await
         .expect("Create client");
+
+    {
+        let mut data = client.data.write().await;
+        data.insert::<State>(state);
+    }
 
     if let Err(err) = client.start().await {
         println!("Client error: {err}");
