@@ -9,26 +9,7 @@
 
 ### **Public Bot**
 
-- [Invite our publicly hosted bot](https://discord.com/oauth2/authorize?client_id=866304561017913354&scope=bot&permissions=388176)
-
-### **Manual**
-
-Prerequisites:
-
-- [Rust](https://www.rust-lang.org/tools/install)
-
-1. Create and configure an `.env` file from the following template:
-
-```sh
-# Your discord bot's token
-DISCORD_TOKEN=
-```
-
-2. Start it!
-
-```sh
-cargo run
-```
+- [Invite our publicly hosted bot](https://discord.com/oauth2/authorize?client_id=866304561017913354&scope=applications.commands%20bot&permissions=388176)
 
 ## **✅ Supported Websites**
 
