@@ -43,11 +43,11 @@ impl EventHandler for Handler {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::ApplicationCommand(command) = interaction {
             let content = match command.data.name.as_str() {
-                "ping" => "Hey, I'm alive!".to_string(),
+                "ping" => "Hey, I'm alive!".into(),
                 "list" => commands::general::providers(&ctx, &command).await,
                 "enable" => commands::general::enable(&ctx, &command).await,
                 "disable" => commands::general::disable(&ctx, &command).await,
-                _ => "not implemented :(".to_string(),
+                _ => "not implemented :(".into(),
             };
 
             if let Err(why) = command
