@@ -186,7 +186,8 @@ async fn main() {
     dotenv().ok();
     let token = env::var("DISCORD_TOKEN").expect("Discord token");
 
-    let intents = GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILD_MESSAGES;
+    let intents =
+        GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILD_MESSAGES | GatewayIntents::GUILDS;
 
     let pool = PgPoolOptions::new()
         .max_connections(5)
