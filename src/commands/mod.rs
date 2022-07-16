@@ -16,7 +16,7 @@ fn is_valid_provider<'a>(providers: &Vec<&'a dyn Provider>, provider: &String) -
     providers.iter().any(|p| p.name().eq(provider))
 }
 
-pub async fn providers(ctx: &Context, command: &ApplicationCommandInteraction) -> String {
+pub async fn list(ctx: &Context, command: &ApplicationCommandInteraction) -> String {
     let data = ctx.data.read().await;
     let state = data.get::<State>().unwrap();
 

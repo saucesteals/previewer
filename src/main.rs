@@ -2,6 +2,8 @@ mod commands;
 mod db;
 mod providers;
 
+use std::env;
+
 use dotenv::dotenv;
 use providers::{tiktok::TiktokProvider, *};
 use serenity::{
@@ -14,44 +16,36 @@ use serenity::{
             interaction::{Interaction, InteractionResponseType},
         },
         channel::Message,
-        gateway::{Activity, Ready},
-        guild::Guild,
+        gateway::Ready,
         Permissions,
     },
     prelude::{GatewayIntents, TypeMapKey},
     Client,
 };
 use sqlx::postgres::PgPoolOptions;
-use std::{
-    env,
-    sync::atomic::{AtomicUsize, Ordering},
-};
 
-struct Handler {
-    guild_count: AtomicUsize,
-}
+struct Handler;
 
 impl Default for Handler {
     fn default() -> Self {
-        Self {
-            guild_count: AtomicUsize::default(),
-        }
+        Self {}
     }
 }
+
 #[async_trait]
 impl EventHandler for Handler {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::ApplicationCommand(command) = interaction {
             let content = match command.data.name.as_str() {
                 "ping" => "Hey, I'm alive!".into(),
-                "list" => commands::providers(&ctx, &command).await,
+                "list" => commands::list(&ctx, &command).await,
                 "enable" => commands::enable(&ctx, &command).await,
                 "disable" => commands::disable(&ctx, &command).await,
                 _ => "not implemented :(".into(),
             };
 
             if let Err(why) = command
-                .create_interaction_response(&ctx.http, |response| {
+                .create_interaction_response(&ctx, |response| {
                     response
                         .kind(InteractionResponseType::ChannelMessageWithSource)
                         .interaction_response_data(|message| message.content(content))
@@ -63,22 +57,8 @@ impl EventHandler for Handler {
         }
     }
 
-    async fn guild_create(&self, ctx: Context, _guild: Guild) {
-        let guild_count = self.guild_count.fetch_add(1, Ordering::SeqCst);
-
-        if guild_count % 10 == 0 {
-            ctx.set_activity(Activity::watching(format!("{} guilds", guild_count)))
-                .await;
-        }
-    }
-
     async fn ready(&self, ctx: Context, about: Ready) {
         println!("Ready as {}", about.user.name);
-
-        let guild_count = about.guilds.len();
-        self.guild_count.store(guild_count, Ordering::SeqCst);
-        ctx.set_activity(Activity::watching(format!("{} guilds", guild_count)))
-            .await;
 
         let data = ctx.data.read().await;
         let state = data.get::<State>().unwrap();
@@ -186,8 +166,7 @@ async fn main() {
     dotenv().ok();
     let token = env::var("DISCORD_TOKEN").expect("Discord token");
 
-    let intents =
-        GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILD_MESSAGES | GatewayIntents::GUILDS;
+    let intents = GatewayIntents::MESSAGE_CONTENT | GatewayIntents::GUILD_MESSAGES;
 
     let pool = PgPoolOptions::new()
         .max_connections(5)
@@ -200,7 +179,7 @@ async fn main() {
     let db = db::Database::new(pool);
 
     let state = State {
-        db: db,
+        db,
         providers: vec![&TiktokProvider {}],
     };
 
