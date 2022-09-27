@@ -193,7 +193,7 @@ async fn main() {
         data.insert::<State>(state);
     }
 
-    if let Err(err) = client.start().await {
+    if let Err(err) = client.start_autosharded().await {
         println!("Client error: {err}");
     }
 }
