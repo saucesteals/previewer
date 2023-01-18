@@ -139,6 +139,13 @@ impl EventHandler for Handler {
                     continue;
                 }
 
+                println!(
+                    "[{}] [{}#{}] {}",
+                    msg.guild_id.unwrap_or_default(),
+                    msg.author.name,
+                    msg.author.discriminator,
+                    url
+                );
                 let create_message = provider.new_message(url);
                 let map = json::hashmap_to_json_map(create_message.0);
                 ctx.http
