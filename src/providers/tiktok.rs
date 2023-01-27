@@ -29,7 +29,7 @@ impl Provider for TiktokProvider {
     fn new_message(&self, url: &str) -> CreateMessage {
         let mut message = CreateMessage::default();
         message.content(format!(
-            "<{}>\n{}\nhttps://tiktok.sauce.sh/?url=https://{}",
+            "{}\n{}\nhttps://tiktok.sauce.sh/?url=https://{}",
             buy_me_coffee(),
             HIDER,
             url
