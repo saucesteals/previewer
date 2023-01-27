@@ -146,7 +146,9 @@ impl EventHandler for Handler {
                     msg.author.discriminator,
                     url
                 );
-                let create_message = provider.new_message(url);
+                let create_message = provider.new_message(
+                    format!("https://www.buymeacoffee.com/saucesteals - {url}").as_str(),
+                );
                 let map = json::hashmap_to_json_map(create_message.0);
                 ctx.http
                     .send_message(msg.channel_id.0, &Value::from(map))
