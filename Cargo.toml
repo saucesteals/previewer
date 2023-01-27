@@ -9,6 +9,7 @@ sqlx = { version = "0.6", features = [ "runtime-tokio-rustls", "postgres", "offl
 dotenv = "0.15.0"
 regex = "1"
 lazy_static = "1.4.0"
+rand = "0.8.5"
 
 [dependencies.serenity]
 git = "https://github.com/serenity-rs/serenity"

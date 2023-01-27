@@ -1,5 +1,6 @@
 use crate::providers::Provider;
 use lazy_static::lazy_static;
+use rand::prelude::*;
 use regex::Regex;
 use serenity::builder::CreateMessage;
 
@@ -12,6 +13,15 @@ lazy_static! {
 const HIDER: &str = "||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||||​||";
 const BUYMECOFFEE: &str = "https://www.buymeacoffee.com/saucesteals";
 
+fn BuyMeCoffee<'a>() -> String {
+    let mut rng = rand::thread_rng();
+    if rng.gen_range(0..100) < 25 {
+        return BUYMECOFFEE.to_string();
+    }
+
+    return format!("<{BUYMECOFFEE}>");
+}
+
 impl Provider for TiktokProvider {
     fn name(&self) -> String {
         "tiktok".to_string()
@@ -19,7 +29,10 @@ impl Provider for TiktokProvider {
     fn new_message(&self, url: &str) -> CreateMessage {
         let mut message = CreateMessage::default();
         message.content(format!(
-            "{BUYMECOFFEE}\n{HIDER}\nhttps://tiktok.sauce.sh/?url=https://{url}"
+            "<{}>\n{}\nhttps://tiktok.sauce.sh/?url=https://{}",
+            BuyMeCoffee(),
+            HIDER,
+            url
         ));
         message
     }
