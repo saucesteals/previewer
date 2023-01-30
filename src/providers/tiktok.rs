@@ -15,7 +15,7 @@ const BUYMECOFFEE: &str = "https://www.buymeacoffee.com/saucesteals";
 
 fn buy_me_coffee<'a>() -> String {
     let mut rng = rand::thread_rng();
-    if rng.gen_range(0..100) < 10 {
+    if rng.gen_range(0..100) < 5 {
         return BUYMECOFFEE.to_string();
     }
 
